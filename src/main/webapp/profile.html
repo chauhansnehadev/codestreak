@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Profile & Settings - CodeStreak</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <nav class="sidebar" id="app-sidebar"></nav>
+
+    <div class="main-wrapper">
+      <header class="top-bar">
+        <div class="page-title-box">
+          <h1>Profile & Account Settings</h1>
+          <p>Manage your developer preferences, daily target, and credentials</p>
+        </div>
+      </header>
+
+      <main class="content-body" style="max-width: 800px;">
+        <!-- General Info Card -->
+        <div class="card" style="margin-bottom: 2rem;">
+          <h2 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            Personal Information
+          </h2>
+
+          <form id="profile-form">
+            <div class="form-group">
+              <label class="form-label" for="profile-username">Username</label>
+              <input type="text" id="profile-username" class="form-control" disabled style="opacity: 0.7; cursor: not-allowed;">
+              <small style="color: var(--text-dim); font-size: 0.75rem;">Usernames cannot be changed.</small>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="profile-email">Email Address</label>
+              <input type="email" id="profile-email" class="form-control" disabled style="opacity: 0.7; cursor: not-allowed;">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="profile-fullname">Full Name</label>
+              <input type="text" id="profile-fullname" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="profile-target">Daily Problems Solved Target</label>
+              <input type="number" id="profile-target" class="form-control" min="1" max="50" required>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+              <button type="submit" class="btn btn-primary">Save Profile Changes</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Security / Password Card -->
+        <div class="card">
+          <h2 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            Security & Password
+          </h2>
+
+          <form id="password-form">
+            <div class="form-group">
+              <label class="form-label" for="current-password">Current Password</label>
+              <input type="password" id="current-password" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="new-password">New Password (min 6 chars)</label>
+              <input type="password" id="new-password" class="form-control" minlength="6" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="confirm-password">Confirm New Password</label>
+              <input type="password" id="confirm-password" class="form-control" minlength="6" required>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+              <button type="submit" class="btn btn-secondary">Update Password</button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await App.init('profile');
+      loadProfile();
+    });
+
+    async function loadProfile() {
+      try {
+        const res = await fetch('/codestreak/api/user');
+        const json = await res.json();
+        if (!json.success) return;
+
+        const u = json.data;
+        document.getElementById('profile-username').value = u.username;
+        document.getElementById('profile-email').value = u.email;
+        document.getElementById('profile-fullname').value = u.fullName || '';
+        document.getElementById('profile-target').value = u.targetProblemsPerDay || 3;
+      } catch (e) {
+        console.error('Failed to load profile', e);
+      }
+    }
+
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fullName = document.getElementById('profile-fullname').value.trim();
+      const targetProblemsPerDay = parseInt(document.getElementById('profile-target').value);
+
+      try {
+        const res = await fetch('/codestreak/api/user', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullName, targetProblemsPerDay })
+        });
+        const json = await res.json();
+        if (json.success) {
+          App.toast('Profile updated successfully');
+          App.updateUserUI(json.data);
+        } else {
+          App.toast(json.error || 'Failed to update profile', 'error');
+        }
+      } catch (e) {
+        App.toast('Error saving profile', 'error');
+      }
+    });
+
+    document.getElementById('password-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const oldPassword = document.getElementById('current-password').value;
+      const newPassword = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      if (newPassword !== confirmPassword) {
+        App.toast('Passwords do not match', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/codestreak/api/user/password', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ oldPassword, newPassword })
+        });
+        const json = await res.json();
+        if (json.success) {
+          App.toast('Password updated successfully');
+          document.getElementById('password-form').reset();
+        } else {
+          App.toast(json.error || 'Failed to update password', 'error');
+        }
+      } catch (e) {
+        App.toast('Error changing password', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

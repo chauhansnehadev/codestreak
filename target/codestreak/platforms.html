@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Platforms - CodeStreak</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <nav class="sidebar" id="app-sidebar"></nav>
+
+    <div class="main-wrapper">
+      <header class="top-bar">
+        <div class="page-title-box">
+          <h1>Platform Management</h1>
+          <p>Connect and synchronize your competitive programming and DSA profiles</p>
+        </div>
+      </header>
+
+      <main class="content-body">
+        <div class="grid grid-cols-2" id="platforms-grid">
+          <!-- Dynamically populated platform cards -->
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Platform Edit Modal -->
+  <div class="modal-overlay" id="platform-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="platform-modal-title">Configure Platform</h2>
+        <button class="modal-close" onclick="closePlatformModal()">&times;</button>
+      </div>
+
+      <form id="platform-form">
+        <input type="hidden" id="edit-platform-id">
+
+        <div class="form-group">
+          <label class="form-label" for="plat-username">Platform Handle / Username *</label>
+          <input type="text" id="plat-username" class="form-control" placeholder="tourist" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="plat-url">Profile URL</label>
+          <input type="url" id="plat-url" class="form-control" placeholder="https://leetcode.com/u/...">
+        </div>
+
+        <div style="display: flex; gap: 1rem;">
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label" for="plat-solved">Problems Solved</label>
+            <input type="number" id="plat-solved" class="form-control" min="0" value="0">
+          </div>
+
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label" for="plat-rating">Rating / Score</label>
+            <input type="number" id="plat-rating" class="form-control" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="plat-rank">Global Rank / Badge</label>
+          <input type="text" id="plat-rank" class="form-control" placeholder="e.g. Knight / Top 5% / 4 Star">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="closePlatformModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    let masterPlatforms = [];
+    let userPlatforms = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await App.init('platforms');
+      loadPlatforms();
+    });
+
+    async function loadPlatforms() {
+      try {
+        const res = await fetch('/codestreak/api/platforms');
+        const json = await res.json();
+        if (!json.success) return;
+
+        masterPlatforms = json.data.platforms;
+        userPlatforms = json.data.userPlatforms;
+
+        renderPlatforms();
+      } catch (e) {
+        console.error('Error fetching platforms', e);
+      }
+    }
+
+    function renderPlatforms() {
+      const grid = document.getElementById('platforms-grid');
+      grid.innerHTML = '';
+
+      masterPlatforms.forEach(p => {
+        const up = userPlatforms.find(u => u.platformId === p.id);
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const isConnected = !!up;
+        const statusBadge = isConnected
+          ? '<span class="badge badge-solved">Connected</span>'
+          : '<span class="badge badge-not-started">Not Connected</span>';
+
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.06); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                ${getPlatformIcon(p.code)}
+              </div>
+              <div>
+                <h3 style="font-size: 1.15rem; font-weight: 700;">${p.name}</h3>
+                <a href="${p.baseUrl}" target="_blank" rel="noopener" style="font-size: 0.8rem; color: var(--accent-teal); text-decoration: none;">${p.baseUrl.replace('https://', '')}</a>
+              </div>
+            </div>
+            ${statusBadge}
+          </div>
+
+          ${isConnected ? `
+            <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.5rem;">
+                <span style="color: var(--text-muted);">Handle:</span>
+                <span style="font-weight: 600; font-family: var(--font-mono);">${up.platformUsername}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.5rem;">
+                <span style="color: var(--text-muted);">Solved Problems:</span>
+                <span style="font-weight: 600; color: var(--color-easy);">${up.problemsSolved}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.5rem;">
+                <span style="color: var(--text-muted);">Contest Rating:</span>
+                <span style="font-weight: 600; color: var(--color-medium);">${up.rating || '-'}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                <span style="color: var(--text-muted);">Global Standing:</span>
+                <span style="font-weight: 600; color: var(--accent-cyan);">${up.globalRank || '-'}</span>
+              </div>
+            </div>
+          ` : `
+            <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; text-align: center; color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.25rem;">
+              Link your ${p.name} profile to automatically track your solves and ratings.
+            </div>
+          `}
+
+          <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+            ${isConnected ? `
+              <button class="btn btn-secondary btn-sm" onclick="openConfigureModal(${p.id})">Edit Profile</button>
+              <button class="btn btn-danger btn-sm" onclick="disconnectPlatform(${p.id})">Disconnect</button>
+            ` : `
+              <button class="btn btn-primary btn-sm" onclick="openConfigureModal(${p.id})">Connect Profile</button>
+            `}
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    function getPlatformIcon(code) {
+      if (code === 'leetcode') return '🟧';
+      if (code === 'codeforces') return '📊';
+      if (code === 'codechef') return '👨‍🍳';
+      if (code === 'hackerrank') return '🟩';
+      return '💻';
+    }
+
+    function openConfigureModal(platformId) {
+      const p = masterPlatforms.find(item => item.id === platformId);
+      const up = userPlatforms.find(item => item.platformId === platformId);
+
+      document.getElementById('platform-modal-title').textContent = `Configure ${p ? p.name : 'Platform'}`;
+      document.getElementById('edit-platform-id').value = platformId;
+
+      document.getElementById('plat-username').value = up ? up.platformUsername : '';
+      document.getElementById('plat-url').value = up ? (up.profileUrl || '') : '';
+      document.getElementById('plat-solved').value = up ? up.problemsSolved : 0;
+      document.getElementById('plat-rating').value = up ? up.rating : 0;
+      document.getElementById('plat-rank').value = up ? (up.globalRank || '') : '';
+
+      document.getElementById('platform-modal').classList.add('active');
+    }
+
+    function closePlatformModal() {
+      document.getElementById('platform-modal').classList.remove('active');
+    }
+
+    document.getElementById('platform-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const platformId = parseInt(document.getElementById('edit-platform-id').value);
+      const platformUsername = document.getElementById('plat-username').value.trim();
+      const profileUrl = document.getElementById('plat-url').value.trim();
+      const problemsSolved = parseInt(document.getElementById('plat-solved').value) || 0;
+      const rating = parseInt(document.getElementById('plat-rating').value) || 0;
+      const globalRank = document.getElementById('plat-rank').value.trim();
+
+      try {
+        const res = await fetch('/codestreak/api/platforms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ platformId, platformUsername, profileUrl, problemsSolved, rating, globalRank })
+        });
+        const json = await res.json();
+        if (json.success) {
+          App.toast('Platform settings saved');
+          closePlatformModal();
+          loadPlatforms();
+        } else {
+          App.toast(json.error || 'Failed to save', 'error');
+        }
+      } catch (err) {
+        App.toast('Network error', 'error');
+      }
+    });
+
+    async function disconnectPlatform(platformId) {
+      if (!confirm('Are you sure you want to disconnect this platform?')) return;
+      try {
+        const res = await fetch(`/codestreak/api/platforms/${platformId}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) {
+          App.toast('Platform disconnected');
+          loadPlatforms();
+        } else {
+          App.toast(json.error, 'error');
+        }
+      } catch (e) {
+        App.toast('Failed to disconnect platform', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

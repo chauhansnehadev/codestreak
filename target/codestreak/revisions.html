@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Revision Planner - CodeStreak</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <nav class="sidebar" id="app-sidebar"></nav>
+
+    <div class="main-wrapper">
+      <header class="top-bar">
+        <div class="page-title-box">
+          <h1>Spaced Repetition & Revision Planner</h1>
+          <p>Schedule reviews, beat the forgetting curve, and reinforce algorithmic patterns</p>
+        </div>
+        <div class="top-actions">
+          <button class="btn btn-primary btn-sm" onclick="openScheduleModal()">+ New Revision Task</button>
+        </div>
+      </header>
+
+      <main class="content-body">
+        <!-- Revision Metric Cards -->
+        <div class="grid grid-cols-3" style="margin-bottom: 2rem;">
+          <div class="card" onclick="filterRevisions('PENDING')" style="cursor: pointer;">
+            <div class="card-title">Pending Tasks</div>
+            <div class="stat-value" style="color: var(--accent-cyan);" id="stat-pending">0</div>
+            <div class="stat-sub">Active reviews queued</div>
+          </div>
+
+          <div class="card" onclick="filterRevisions('OVERDUE')" style="cursor: pointer;">
+            <div class="card-title">Overdue Revisions</div>
+            <div class="stat-value" style="color: var(--color-hard);" id="stat-overdue">0</div>
+            <div class="stat-sub">Urgent attention needed</div>
+          </div>
+
+          <div class="card" onclick="filterRevisions('COMPLETED')" style="cursor: pointer;">
+            <div class="card-title">Completed Revisions</div>
+            <div class="stat-value" style="color: var(--color-easy);" id="stat-completed">0</div>
+            <div class="stat-sub">Mastered patterns</div>
+          </div>
+        </div>
+
+        <!-- Smart Spaced Repetition Suggestions -->
+        <div class="card" style="margin-bottom: 2rem; border-color: rgba(20, 184, 166, 0.3);">
+          <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>💡 Suggested for Revision</span>
+            <span class="badge badge-revision">Spaced Repetition</span>
+          </h3>
+          <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Problems marked with "Revision Needed" or solved over 7 days ago without an active revision schedule.
+          </p>
+
+          <div id="suggestions-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <!-- Suggested items -->
+          </div>
+        </div>
+
+        <!-- Filter tabs & Scheduled Revisions Table -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div style="display: flex; gap: 0.5rem;" id="revision-filter-tabs">
+              <button class="btn btn-secondary btn-sm active-tab" onclick="filterRevisions('ALL', this)">All</button>
+              <button class="btn btn-secondary btn-sm" onclick="filterRevisions('UPCOMING', this)">Upcoming</button>
+              <button class="btn btn-secondary btn-sm" onclick="filterRevisions('OVERDUE', this)">Overdue</button>
+              <button class="btn btn-secondary btn-sm" onclick="filterRevisions('COMPLETED', this)">Completed</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Scheduled Date</th>
+                  <th>Problem</th>
+                  <th>Difficulty</th>
+                  <th>Priority</th>
+                  <th>Notes</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="revisions-tbody">
+                <tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 2rem;">Loading revisions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Schedule Revision Modal -->
+  <div class="modal-overlay" id="revision-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Schedule Revision</h2>
+        <button class="modal-close" onclick="closeScheduleModal()">&times;</button>
+      </div>
+
+      <form id="revision-form">
+        <div class="form-group">
+          <label class="form-label" for="rev-problem">Select Problem *</label>
+          <select id="rev-problem" class="form-control" required>
+            <option value="">Select a problem...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="rev-date">Revision Date *</label>
+          <input type="date" id="rev-date" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="rev-priority">Priority</label>
+          <select id="rev-priority" class="form-control">
+            <option value="1">Normal</option>
+            <option value="2">High</option>
+            <option value="3">Urgent</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="rev-notes">Revision Focus / Note</label>
+          <textarea id="rev-notes" class="form-control" rows="2" placeholder="e.g. Focus on recursive tree pruning"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeScheduleModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Schedule Review</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    let currentFilter = 'ALL';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await App.init('revisions');
+      await loadRevisions(currentFilter);
+      await loadSuggestions();
+      await loadProblemDropdown();
+
+      // Default date to today + 3 days
+      const d = new Date();
+      d.setDate(d.getDate() + 3);
+      document.getElementById('rev-date').value = d.toISOString().split('T')[0];
+    });
+
+    async function loadRevisions(filter) {
+      try {
+        const res = await fetch(`/codestreak/api/revisions?filter=${filter}`);
+        const json = await res.json();
+        if (!json.success) return;
+
+        const data = json.data;
+        document.getElementById('stat-pending').textContent = data.pendingCount;
+        document.getElementById('stat-overdue').textContent = data.overdueCount;
+        document.getElementById('stat-completed').textContent = data.completedCount;
+
+        renderRevisionsTable(data.revisions);
+      } catch (e) {
+        console.error('Failed to load revisions', e);
+      }
+    }
+
+    function renderRevisionsTable(revisions) {
+      const tbody = document.getElementById('revisions-tbody');
+      tbody.innerHTML = '';
+
+      if (!revisions || revisions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 2rem;">No revisions found for this filter.</td></tr>';
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      revisions.forEach(r => {
+        const isCompleted = r.status === 'COMPLETED';
+        const isOverdue = !isCompleted && r.scheduledFor < today;
+
+        let dateDisplay = `<span style="font-family: var(--font-mono);">${r.scheduledFor}</span>`;
+        if (isOverdue) {
+          dateDisplay += ` <span class="badge badge-hard" style="font-size: 0.65rem;">Overdue</span>`;
+        }
+
+        let prioBadge = '<span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">Normal</span>';
+        if (r.priority === 2) prioBadge = '<span class="badge" style="background: rgba(245,158,11,0.15); color: #fbbf24;">High</span>';
+        if (r.priority === 3) prioBadge = '<span class="badge" style="background: rgba(239,68,68,0.15); color: #ef4444;">Urgent</span>';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${dateDisplay}</td>
+          <td>
+            <strong>${r.problemTitle}</strong>
+            ${r.problemUrl ? `<a href="${r.problemUrl}" target="_blank" rel="noopener" style="color: var(--accent-teal); font-size: 0.8rem; margin-left: 0.4rem;">↗</a>` : ''}
+          </td>
+          <td><span class="badge badge-${(r.problemDifficulty || 'MEDIUM').toLowerCase()}">${r.problemDifficulty || 'MED'}</span></td>
+          <td>${prioBadge}</td>
+          <td style="color: var(--text-muted); font-size: 0.8rem;">${r.notes || '-'}</td>
+          <td>
+            <span class="badge ${isCompleted ? 'badge-solved' : (isOverdue ? 'badge-hard' : 'badge-attempted')}">
+              ${r.status}
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.4rem;">
+              ${!isCompleted ? `
+                <button class="btn btn-primary btn-sm" onclick="markRevisionStatus(${r.id}, 'COMPLETED')">✓ Done</button>
+              ` : `
+                <button class="btn btn-secondary btn-sm" onclick="markRevisionStatus(${r.id}, 'PENDING')">Re-queue</button>
+              `}
+              <button class="btn btn-danger btn-sm" onclick="deleteRevision(${r.id})">&times;</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadSuggestions() {
+      try {
+        const res = await fetch('/codestreak/api/revisions/suggestions');
+        const json = await res.json();
+        if (!json.success) return;
+
+        const list = document.getElementById('suggestions-list');
+        list.innerHTML = '';
+
+        if (!json.data || json.data.length === 0) {
+          list.innerHTML = '<div style="color: var(--text-dim); font-size: 0.85rem;">No immediate revision suggestions at this time.</div>';
+          return;
+        }
+
+        json.data.forEach(p => {
+          const item = document.createElement('div');
+          item.style.display = 'flex';
+          item.style.justifyContent = 'space-between';
+          item.style.alignItems = 'center';
+          item.style.background = 'var(--bg-input)';
+          item.style.padding = '0.65rem 1rem';
+          item.style.borderRadius = 'var(--radius-md)';
+          item.style.border = '1px solid var(--border-color)';
+
+          item.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="badge badge-${p.difficulty.toLowerCase()}">${p.difficulty}</span>
+              <span style="font-weight: 600; font-size: 0.9rem;">${p.title}</span>
+              <span style="color: var(--text-dim); font-size: 0.75rem;">(Status: ${p.userStatus})</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="scheduleSuggestion(${p.id})">+ Schedule Now</button>
+          `;
+          list.appendChild(item);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadProblemDropdown() {
+      try {
+        const res = await fetch('/codestreak/api/problems');
+        const json = await res.json();
+        if (!json.success) return;
+
+        const select = document.getElementById('rev-problem');
+        json.data.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = `[${p.difficulty}] ${p.title}`;
+          select.appendChild(opt);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function filterRevisions(filter, btn) {
+      currentFilter = filter;
+      if (btn) {
+        document.querySelectorAll('#revision-filter-tabs button').forEach(b => b.classList.remove('active-tab'));
+        btn.classList.add('active-tab');
+      }
+      loadRevisions(filter);
+    }
+
+    function openScheduleModal() {
+      document.getElementById('revision-modal').classList.add('active');
+    }
+
+    function closeScheduleModal() {
+      document.getElementById('revision-modal').classList.remove('active');
+    }
+
+    function scheduleSuggestion(problemId) {
+      document.getElementById('rev-problem').value = problemId;
+      openScheduleModal();
+    }
+
+    document.getElementById('revision-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const problemId = parseInt(document.getElementById('rev-problem').value);
+      const scheduledFor = document.getElementById('rev-date').value;
+      const priority = parseInt(document.getElementById('rev-priority').value);
+      const notes = document.getElementById('rev-notes').value.trim();
+
+      try {
+        const res = await fetch('/codestreak/api/revisions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ problemId, scheduledFor, priority, notes })
+        });
+        const json = await res.json();
+        if (json.success) {
+          App.toast('Revision scheduled successfully');
+          closeScheduleModal();
+          loadRevisions(currentFilter);
+          loadSuggestions();
+        } else {
+          App.toast(json.error, 'error');
+        }
+      } catch (err) {
+        App.toast('Failed to schedule revision', 'error');
+      }
+    });
+
+    async function markRevisionStatus(id, status) {
+      try {
+        const res = await fetch(`/codestreak/api/revisions/${id}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+        const json = await res.json();
+        if (json.success) {
+          App.toast(`Revision marked as ${status}`);
+          loadRevisions(currentFilter);
+        } else {
+          App.toast(json.error, 'error');
+        }
+      } catch (e) {
+        App.toast('Error updating revision', 'error');
+      }
+    }
+
+    async function deleteRevision(id) {
+      if (!confirm('Remove this revision task?')) return;
+      try {
+        const res = await fetch(`/codestreak/api/revisions/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) {
+          App.toast('Revision removed');
+          loadRevisions(currentFilter);
+        } else {
+          App.toast(json.error, 'error');
+        }
+      } catch (e) {
+        App.toast('Failed to delete revision', 'error');
+      }
+    }
+  </script>
+</body>
+</html>
