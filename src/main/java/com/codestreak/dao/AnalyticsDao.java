@@ -2,6 +2,7 @@ package com.codestreak.dao;
 
 import com.codestreak.model.DashboardSummary;
 import com.codestreak.model.Submission;
+import com.codestreak.model.UserPlatform;
 import com.codestreak.util.DatabaseConfig;
 
 import java.sql.*;
@@ -54,7 +55,7 @@ public class AnalyticsDao {
             }
         }
 
-        // 3. Platform Solved Breakdown
+        // 3. Platform Solved Breakdown from logged problems
         String platformSql = "SELECT COALESCE(pl.name, 'Other') as platform_name, COUNT(DISTINCT up.problem_id) as cnt " +
             "FROM user_problems up " +
             "JOIN problems p ON up.problem_id = p.id " +
@@ -71,7 +72,53 @@ public class AnalyticsDao {
                 }
             }
         }
+
+        // 3b. Read live connected platforms from user_platforms
+        String upSql = "SELECT up.id, up.user_id, up.platform_id, p.name as platform_name, p.code as platform_code, " +
+                       "up.platform_username, up.profile_url, up.problems_solved, up.rating, up.global_rank " +
+                       "FROM user_platforms up " +
+                       "JOIN platforms p ON up.platform_id = p.id " +
+                       "WHERE up.user_id = ? ORDER BY p.id ASC";
+        List<UserPlatform> connectedList = new ArrayList<>();
+        int externalSolvedTotal = 0;
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(upSql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    UserPlatform up = new UserPlatform();
+                    up.setId(rs.getInt("id"));
+                    up.setUserId(rs.getInt("user_id"));
+                    up.setPlatformId(rs.getInt("platform_id"));
+                    up.setPlatformName(rs.getString("platform_name"));
+                    up.setPlatformCode(rs.getString("platform_code"));
+                    up.setPlatformUsername(rs.getString("platform_username"));
+                    up.setProfileUrl(rs.getString("profile_url"));
+                    int solved = rs.getInt("problems_solved");
+                    up.setProblemsSolved(solved);
+                    up.setRating(rs.getInt("rating"));
+                    up.setGlobalRank(rs.getString("global_rank"));
+                    connectedList.add(up);
+
+                    externalSolvedTotal += solved;
+
+                    // If connected platform has solves, sync with platformMap
+                    String pName = rs.getString("platform_name");
+                    if (solved > 0) {
+                        int existing = platformMap.getOrDefault(pName, 0);
+                        platformMap.put(pName, Math.max(existing, solved));
+                    }
+                }
+            }
+        }
+        summary.setConnectedPlatforms(connectedList);
+        summary.setExternalTotalSolved(externalSolvedTotal);
         summary.setPlatformSolved(platformMap);
+
+        // If user has connected profiles with solves, synchronize the primary total solved
+        if (externalSolvedTotal > 0) {
+            summary.setTotalSolved(Math.max(summary.getTotalSolved(), externalSolvedTotal));
+        }
 
         // 4. Topic Solved Breakdown
         String topicSql = "SELECT t.name as topic_name, COUNT(DISTINCT up.problem_id) as cnt " +

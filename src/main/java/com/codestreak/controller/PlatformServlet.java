@@ -4,6 +4,7 @@ import com.codestreak.dao.PlatformDao;
 import com.codestreak.model.Platform;
 import com.codestreak.model.User;
 import com.codestreak.model.UserPlatform;
+import com.codestreak.service.PlatformFetcherService;
 import com.codestreak.util.AuthHelper;
 import com.codestreak.util.JsonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class PlatformServlet extends HttpServlet {
 
     private final PlatformDao platformDao = new PlatformDao();
+    private final PlatformFetcherService fetcherService = new PlatformFetcherService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -41,6 +43,12 @@ public class PlatformServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String pathInfo = req.getPathInfo();
+        if ("/fetch".equals(pathInfo)) {
+            handleFetch(req, resp);
+            return;
+        }
+
         User user = AuthHelper.getEffectiveUser(req);
         try {
             JsonNode body = JsonUtil.getMapper().readTree(req.getInputStream());
@@ -62,6 +70,26 @@ public class PlatformServlet extends HttpServlet {
             JsonUtil.sendSuccess(resp, "Platform profile saved successfully", up);
         } catch (Exception e) {
             JsonUtil.sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error: " + e.getMessage());
+        }
+    }
+
+    private void handleFetch(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        try {
+            JsonNode body = JsonUtil.getMapper().readTree(req.getInputStream());
+            if (!body.has("platformCode") || !body.has("input")) {
+                JsonUtil.sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "platformCode and input are required.");
+                return;
+            }
+
+            String platformCode = body.get("platformCode").asText().trim();
+            String input = body.get("input").asText().trim();
+
+            Map<String, Object> stats = fetcherService.fetchProfileStats(platformCode, input);
+            JsonUtil.sendSuccess(resp, "Live stats fetched successfully", stats);
+        } catch (IllegalArgumentException | UnsupportedOperationException e) {
+            JsonUtil.sendError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        } catch (Exception e) {
+            JsonUtil.sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch live stats: " + e.getMessage());
         }
     }
 

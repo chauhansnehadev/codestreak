@@ -186,7 +186,7 @@
     async function loadMasterData() {
       try {
         const [topRes, platRes] = await Promise.all([
-          fetch('/codestreak/api/roadmap/topics'),
+          fetch('/codestreak/api/topics'),
           fetch('/codestreak/api/platforms')
         ]);
         const topJson = await topRes.json();
@@ -312,8 +312,7 @@
           </td>
           <td>
             <div style="display: flex; gap: 0.5rem;">
-              <button class="btn btn-secondary btn-sm" onclick="scheduleModal(${p.id})" title="Add to Revision Planner">📅</button>
-              <button class="btn btn-secondary btn-sm" onclick="editProblemModal(${p.id})" title="Edit problem details">✏️</button>
+              <button class="btn btn-secondary btn-sm" onclick="editProblemModal(${p.id})" title="Edit problem details">✏️ Edit</button>
               <button class="btn btn-danger btn-sm" onclick="deleteProblem(${p.id})" title="Delete">🗑️</button>
             </div>
           </td>
@@ -431,32 +430,6 @@
         }
       } catch (e) {
         App.toast('Failed to delete problem', 'error');
-      }
-    }
-
-    async function scheduleModal(probId) {
-      const date = prompt('Schedule revision for date (YYYY-MM-DD):', new Date(Date.now() + 3*86400000).toISOString().split('T')[0]);
-      if (!date) return;
-
-      try {
-        const res = await fetch('/codestreak/api/revisions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            problemId: probId,
-            scheduledFor: date,
-            priority: 2,
-            notes: 'Scheduled from problems directory'
-          })
-        });
-        const json = await res.json();
-        if (json.success) {
-          App.toast('Added to Revision Planner!');
-        } else {
-          App.toast(json.error, 'error');
-        }
-      } catch (e) {
-        App.toast('Failed to schedule revision', 'error');
       }
     }
 

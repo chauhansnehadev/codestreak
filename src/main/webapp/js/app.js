@@ -1,6 +1,6 @@
 /**
  * CodeStreak Global App JS
- * Handles common API requests, authentication check, sidebar rendering, and modals.
+ * Handles common API requests, navigation, sidebar rendering, and modals.
  */
 
 const App = {
@@ -22,11 +22,10 @@ const App = {
           return;
         }
       }
-      // If no session active, default to demouser display without redirecting
-      this.currentUser = { username: 'demouser', fullName: 'Demo Coder' };
+      this.currentUser = { username: 'sneha', fullName: 'Sneha Chauhan' };
       this.updateUserUI(this.currentUser);
     } catch (e) {
-      this.currentUser = { username: 'demouser', fullName: 'Demo Coder' };
+      this.currentUser = { username: 'sneha', fullName: 'Sneha Chauhan' };
       this.updateUserUI(this.currentUser);
     }
   },
@@ -55,15 +54,36 @@ const App = {
     const sidebar = document.getElementById('app-sidebar');
     if (!sidebar) return;
 
+    // Sidebar navigation items:
+    // 1. Dashboard
+    // 2. Problems
+    // 3. Platforms
+    // 4. Recommendations
     const navItems = [
-      { id: 'dashboard', label: 'Dashboard', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>', href: 'dashboard.html' },
-      { id: 'problems', label: 'Problems', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>', href: 'problems.html' },
-      { id: 'platforms', label: 'Platforms', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>', href: 'platforms.html' },
-      { id: 'roadmap', label: 'DSA Roadmap', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>', href: 'roadmap.html' },
-      { id: 'recommendations', label: 'Recommendations', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>', href: 'recommendations.html' },
-      { id: 'revisions', label: 'Revision Planner', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', href: 'revisions.html' },
-      { id: 'analytics', label: 'Analytics', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>', href: 'analytics.html' },
-      { id: 'profile', label: 'Profile & Settings', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>', href: 'profile.html' }
+      {
+        id: 'dashboard',
+        label: 'Dashboard',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+        href: 'dashboard.html'
+      },
+      {
+        id: 'problems',
+        label: 'Problems',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+        href: 'problems.html'
+      },
+      {
+        id: 'platforms',
+        label: 'Platforms',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+        href: 'platforms.html'
+      },
+      {
+        id: 'recommendations',
+        label: 'Recommendations',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        href: 'recommendations.html'
+      }
     ];
 
     let html = `
@@ -91,10 +111,10 @@ const App = {
       </ul>
       <div class="sidebar-footer">
         <div class="user-mini">
-          <div class="user-avatar" id="sidebar-avatar">U</div>
+          <div class="user-avatar" id="sidebar-avatar">S</div>
           <div class="user-meta">
-            <span class="user-name" id="sidebar-user-name">Loading...</span>
-            <span class="user-sub" id="sidebar-user-sub">...</span>
+            <span class="user-name" id="sidebar-user-name">Sneha Chauhan</span>
+            <span class="user-sub" id="sidebar-user-sub">@sneha</span>
           </div>
         </div>
         <button class="logout-btn" onclick="App.logout()" title="Logout">

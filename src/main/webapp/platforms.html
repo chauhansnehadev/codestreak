@@ -36,10 +36,19 @@
 
       <form id="platform-form">
         <input type="hidden" id="edit-platform-id">
+        <input type="hidden" id="edit-platform-code">
 
         <div class="form-group">
-          <label class="form-label" for="plat-username">Platform Handle / Username *</label>
-          <input type="text" id="plat-username" class="form-control" placeholder="tourist" required>
+          <label class="form-label" for="plat-username">Platform Handle / Profile URL *</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="plat-username" class="form-control" placeholder="tourist or https://..." required style="flex: 1;">
+            <button type="button" class="btn btn-secondary" id="btn-auto-fetch" onclick="autoFetchProfileStats()" style="white-space: nowrap;">
+              ⚡ Auto Fetch
+            </button>
+          </div>
+          <span id="fetch-hint" style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-top: 0.25rem;">
+            Supports live stats fetch from LeetCode & Codeforces
+          </span>
         </div>
 
         <div class="form-group">
@@ -102,7 +111,7 @@
       grid.innerHTML = '';
 
       masterPlatforms.forEach(p => {
-        const up = userPlatforms.find(u => u.platformId === p.id);
+        const up = (userPlatforms || []).find(u => u.platformId === p.id);
         const card = document.createElement('div');
         card.className = 'card';
 
@@ -132,7 +141,7 @@
                 <span style="font-weight: 600; font-family: var(--font-mono);">${up.platformUsername}</span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.5rem;">
-                <span style="color: var(--text-muted);">Solved Problems:</span>
+                <span style="color: var(--text-muted);">Problems Solved:</span>
                 <span style="font-weight: 600; color: var(--color-easy);">${up.problemsSolved}</span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.5rem;">
@@ -146,7 +155,7 @@
             </div>
           ` : `
             <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; text-align: center; color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.25rem;">
-              Link your ${p.name} profile to automatically track your solves and ratings.
+              Link your ${p.name} profile to track your solves and ratings.
             </div>
           `}
 
@@ -178,6 +187,19 @@
 
       document.getElementById('platform-modal-title').textContent = `Configure ${p ? p.name : 'Platform'}`;
       document.getElementById('edit-platform-id').value = platformId;
+      document.getElementById('edit-platform-code').value = p ? p.code : '';
+
+      const fetchBtn = document.getElementById('btn-auto-fetch');
+      const fetchHint = document.getElementById('fetch-hint');
+      const canAutoFetch = p && (p.code === 'leetcode' || p.code === 'codeforces' || p.code === 'hackerrank');
+
+      if (canAutoFetch) {
+        fetchBtn.style.display = 'inline-flex';
+        fetchHint.textContent = `Auto-fetch available: Paste your ${p.name} username or profile link and click Auto Fetch.`;
+      } else {
+        fetchBtn.style.display = 'none';
+        fetchHint.textContent = `Live API not available for ${p ? p.name : 'this platform'}. Enter stats manually.`;
+      }
 
       document.getElementById('plat-username').value = up ? up.platformUsername : '';
       document.getElementById('plat-url').value = up ? (up.profileUrl || '') : '';
@@ -186,6 +208,52 @@
       document.getElementById('plat-rank').value = up ? (up.globalRank || '') : '';
 
       document.getElementById('platform-modal').classList.add('active');
+    }
+
+    async function autoFetchProfileStats() {
+      const platformCode = document.getElementById('edit-platform-code').value;
+      const input = document.getElementById('plat-username').value.trim();
+      const btn = document.getElementById('btn-auto-fetch');
+
+      if (!input) {
+        App.toast('Please enter a username or profile URL first', 'error');
+        return;
+      }
+
+      const origText = btn.innerHTML;
+      btn.innerHTML = '⏳ Fetching...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/codestreak/api/platforms/fetch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ platformCode, input })
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+          const stats = json.data;
+          document.getElementById('plat-username').value = stats.username || input;
+          if (stats.profileUrl) document.getElementById('plat-url').value = stats.profileUrl;
+          if (stats.problemsSolved !== undefined && stats.problemsSolved !== null) {
+            document.getElementById('plat-solved').value = stats.problemsSolved;
+          }
+          if (stats.rating !== undefined && stats.rating !== null) {
+            document.getElementById('plat-rating').value = stats.rating;
+          }
+          if (stats.globalRank) {
+            document.getElementById('plat-rank').value = stats.globalRank;
+          }
+          App.toast(`Live profile stats fetched from ${platformCode.toUpperCase()}!`);
+        } else {
+          App.toast(json.error || 'Failed to fetch live stats', 'error');
+        }
+      } catch (e) {
+        App.toast('Network error while fetching stats', 'error');
+      } finally {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
     }
 
     function closePlatformModal() {

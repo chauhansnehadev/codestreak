@@ -14,73 +14,52 @@
       <header class="top-bar">
         <div class="page-title-box">
           <h1>Coding Progress Dashboard</h1>
-          <p>Real-time DSA metrics, streak, and platform analytics</p>
+          <p>Track your DSA progress, difficulty distribution, and platform statistics</p>
         </div>
         <div class="top-actions">
-          <div class="streak-badge">
-            <svg viewBox="0 0 24 24"><path d="M12 2c1.1 0 2 .9 2 2 0 .7-.4 1.4-1 1.7v1.4c2.5.5 4.5 2.5 4.9 5.1.7-.5 1.5-.7 2.3-.5 1.4.3 2.4 1.5 2.6 2.9.2 1.9-.9 3.6-2.5 4.2-.6 2.9-3.2 5.2-6.3 5.2s-5.7-2.3-6.3-5.2c-1.6-.6-2.7-2.3-2.5-4.2.2-1.4 1.2-2.6 2.6-2.9.8-.2 1.6 0 2.3.5.4-2.6 2.4-4.6 4.9-5.1V5.7c-.6-.3-1-1-1-1.7 0-1.1.9-2 2-2z"/></svg>
-            <span id="streak-count">0</span> Day Streak
-          </div>
           <a href="problems.html" class="btn btn-primary btn-sm">+ Add Problem</a>
         </div>
       </header>
 
       <main class="content-body">
-        <!-- 4-Stat Overview Grid -->
-        <div class="grid grid-cols-4" style="margin-bottom: 1.5rem;">
+        <!-- 2-Card Summary Overview -->
+        <div class="grid grid-cols-2" style="margin-bottom: 1.5rem;">
+          <!-- 1. Total Problems Solved -->
           <div class="card">
             <div class="card-title">
-              <span>Total Solved</span>
+              <span>Total Problems Solved</span>
               <span class="badge badge-solved" id="solved-ratio">0%</span>
             </div>
             <div class="stat-value" id="total-solved">0</div>
             <div class="stat-sub" id="attempted-info">0 attempted</div>
           </div>
 
+          <!-- 2. Difficulty Distribution -->
           <div class="card">
             <div class="card-title">
-              <span>Difficulty Ratio</span>
-              <span style="font-size: 0.8rem; color: var(--accent-teal);">E / M / H</span>
+              <span>Difficulty Distribution</span>
+              <span style="font-size: 0.8rem; color: var(--accent-teal);">Easy / Med / Hard</span>
             </div>
-            <div class="stat-value" style="font-size: 1.5rem; display: flex; gap: 0.5rem; align-items: baseline; margin-top: 0.6rem;">
+            <div class="stat-value" style="font-size: 1.6rem; display: flex; gap: 0.5rem; align-items: baseline; margin-top: 0.6rem;">
               <span style="color: var(--color-easy)" id="count-easy">0</span> /
               <span style="color: var(--color-medium)" id="count-medium">0</span> /
               <span style="color: var(--color-hard)" id="count-hard">0</span>
             </div>
-            <div class="stat-sub">Across all linked platforms</div>
-          </div>
-
-          <div class="card">
-            <div class="card-title">
-              <span>Active Streak</span>
-              <span style="color: #fbbf24;">🔥</span>
-            </div>
-            <div class="stat-value" style="color: #fbbf24;" id="card-streak">0</div>
-            <div class="stat-sub" id="longest-streak">Longest: 0 days</div>
-          </div>
-
-          <div class="card">
-            <div class="card-title">
-              <span>Pending Revisions</span>
-              <span class="badge badge-revision">Due</span>
-            </div>
-            <div class="stat-value" style="color: #c084fc;" id="pending-revisions">0</div>
-            <div class="stat-sub"><a href="revisions.html" style="color: var(--accent-teal); text-decoration: none;">Review queue &rarr;</a></div>
+            <div class="stat-sub">Distribution of solved DSA problems</div>
           </div>
         </div>
 
-        <!-- 2-Column Split: Platform Breakdown & Weekly Heatmap / Activity -->
+        <!-- 2-Column Split: Platform Progress & Recent Activity -->
         <div class="grid grid-cols-2" style="margin-bottom: 1.5rem;">
+          <!-- 3. Platform Progress -->
           <div class="card">
-            <h3 style="font-size: 1.1rem; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-              <span>Platform Progress</span>
-              <a href="platforms.html" style="font-size: 0.8rem; color: var(--accent-teal); text-decoration: none;">Manage Platforms &rarr;</a>
-            </h3>
+            <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Platform Progress</h3>
             <div id="platform-bars" style="display: flex; flex-direction: column; gap: 1rem;">
               <!-- Dynamic bars -->
             </div>
           </div>
 
+          <!-- 4. Recent Coding Activity -->
           <div class="card">
             <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Recent Coding Activity</h3>
             <div class="table-container" style="max-height: 250px; overflow-y: auto;">
@@ -90,7 +69,7 @@
                     <th>Problem</th>
                     <th>Result</th>
                     <th>Language</th>
-                    <th>Time</th>
+                    <th>Date</th>
                   </tr>
                 </thead>
                 <tbody id="recent-activity-tbody">
@@ -101,14 +80,14 @@
           </div>
         </div>
 
-        <!-- Topic-wise Progress Progress Bars -->
+        <!-- 5. Topic-wise Performance -->
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
             <div>
-              <h3 style="font-size: 1.1rem;">Topic-wise Performance Breakdown</h3>
-              <p style="font-size: 0.8rem; color: var(--text-muted);">Completion percentage across core DSA domains</p>
+              <h3 style="font-size: 1.1rem;">Topic-wise Performance</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted);">DSA topics completion and practice progress</p>
             </div>
-            <a href="roadmap.html" class="btn btn-secondary btn-sm">Explore Roadmap &rarr;</a>
+            <a href="problems.html" class="btn btn-secondary btn-sm">Manage Problems &rarr;</a>
           </div>
           <div id="topic-grid" class="grid grid-cols-3">
             <!-- Dynamic Topic Cards -->
@@ -134,41 +113,66 @@
         const summary = json.data.summary;
         const recent = json.data.recentSubmissions;
 
-        // Stat cards
+        // 1. Total Solved
         document.getElementById('total-solved').textContent = summary.totalSolved;
-        document.getElementById('attempted-info').textContent = `${summary.totalAttempted} attempted (${summary.totalProblems} tracked)`;
-        const solvedPct = summary.totalProblems > 0 ? Math.round((summary.totalSolved / summary.totalProblems) * 100) : 0;
-        document.getElementById('solved-ratio').textContent = `${solvedPct}% solved`;
+        if (summary.externalTotalSolved > 0) {
+          document.getElementById('attempted-info').textContent = `${summary.externalTotalSolved} solved across connected profiles`;
+          document.getElementById('solved-ratio').textContent = `Live Synced`;
+        } else {
+          document.getElementById('attempted-info').textContent = `${summary.totalAttempted} attempted (${summary.totalProblems} tracked)`;
+          const solvedPct = summary.totalProblems > 0 ? Math.round((summary.totalSolved / summary.totalProblems) * 100) : 0;
+          document.getElementById('solved-ratio').textContent = `${solvedPct}% solved`;
+        }
 
+        // 2. Difficulty Distribution
         document.getElementById('count-easy').textContent = summary.easySolved;
         document.getElementById('count-medium').textContent = summary.mediumSolved;
         document.getElementById('count-hard').textContent = summary.hardSolved;
 
-        document.getElementById('streak-count').textContent = summary.currentStreak;
-        document.getElementById('card-streak').textContent = `${summary.currentStreak} Days`;
-        document.getElementById('longest-streak').textContent = `Best Streak: ${summary.longestStreak} days`;
-        document.getElementById('pending-revisions').textContent = summary.pendingRevisions;
+        // 3. Platform breakdown (with live connected platforms)
+        renderPlatformBars(summary.platformSolved, summary.connectedPlatforms);
 
-        // Platforms
-        renderPlatformBars(summary.platformSolved);
-
-        // Recent Activity
+        // 4. Recent Activity
         renderRecentActivity(recent);
 
-        // Topics breakdown
+        // 5. Topics breakdown
         loadTopicBreakdown();
       } catch (e) {
         console.error('Failed to load dashboard data', e);
       }
     }
 
-    function renderPlatformBars(platformMap) {
+    function renderPlatformBars(platformMap, connectedPlatforms) {
       const container = document.getElementById('platform-bars');
       container.innerHTML = '';
-      const platforms = Object.keys(platformMap);
 
+      if (connectedPlatforms && connectedPlatforms.length > 0) {
+        connectedPlatforms.forEach(cp => {
+          const solved = cp.problemsSolved || 0;
+          const rating = cp.rating ? `Rating: ${cp.rating}` : '';
+          const rank = cp.globalRank ? `(${cp.globalRank})` : '';
+          const subtitle = [rating, rank].filter(Boolean).join(' • ');
+
+          const el = document.createElement('div');
+          el.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem 1rem;';
+          el.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-weight: 700; color: var(--text-bright);">${cp.platformName}</span>
+                <span style="font-size: 0.8rem; color: var(--accent-cyan); font-family: var(--font-mono);">@${cp.platformUsername}</span>
+              </div>
+              <span style="font-weight: 700; color: var(--color-easy); font-family: var(--font-mono); font-size: 0.95rem;">${solved} solved</span>
+            </div>
+            ${subtitle ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${subtitle}</div>` : ''}
+          `;
+          container.appendChild(el);
+        });
+        return;
+      }
+
+      const platforms = Object.keys(platformMap || {});
       if (platforms.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-dim); text-align: center; padding: 1rem;">No platform submissions recorded yet.</div>';
+        container.innerHTML = '<div style="color: var(--text-dim); text-align: center; padding: 1.5rem;">No platforms connected yet. <a href="platforms.html" style="color: var(--accent-teal)">Connect a platform &rarr;</a></div>';
         return;
       }
 
@@ -197,7 +201,7 @@
       tbody.innerHTML = '';
 
       if (!submissions || submissions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-dim);">No recent activity recorded.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-dim); padding: 1.5rem;">No recent activity recorded.</td></tr>';
         return;
       }
 

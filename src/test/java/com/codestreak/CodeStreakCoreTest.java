@@ -5,7 +5,6 @@ import com.codestreak.model.*;
 import com.codestreak.service.*;
 import org.junit.jupiter.api.*;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,7 +16,6 @@ public class CodeStreakCoreTest {
     private final UserService userService = new UserService();
     private final ProblemService problemService = new ProblemService();
     private final RecommendationService recommendationService = new RecommendationService();
-    private final RevisionService revisionService = new RevisionService();
     private final AnalyticsDao analyticsDao = new AnalyticsDao();
     private final PlatformDao platformDao = new PlatformDao();
 
@@ -60,22 +58,6 @@ public class CodeStreakCoreTest {
 
     @Test
     @Order(4)
-    public void testRevisionScheduler() throws Exception {
-        List<Revision> revs = revisionService.getRevisions(1, "PENDING");
-        assertNotNull(revs);
-
-        // Schedule new revision
-        Revision newRev = revisionService.scheduleRevision(1, 2, LocalDate.now().plusDays(5), 2, "Test revision item");
-        assertNotNull(newRev);
-        assertTrue(newRev.getId() > 0);
-
-        // Update revision to completed
-        boolean updated = revisionService.updateStatus(newRev.getId(), 1, "COMPLETED");
-        assertTrue(updated);
-    }
-
-    @Test
-    @Order(5)
     public void testAnalyticsDashboard() throws Exception {
         DashboardSummary summary = analyticsDao.getDashboardSummary(1);
         assertNotNull(summary);
@@ -85,7 +67,7 @@ public class CodeStreakCoreTest {
     }
 
     @Test
-    @Order(6)
+    @Order(5)
     public void testPlatforms() throws Exception {
         List<Platform> platforms = platformDao.getAllPlatforms();
         assertNotNull(platforms);
