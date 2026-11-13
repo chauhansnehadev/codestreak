@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard - CodeStreak</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <nav class="sidebar" id="app-sidebar"></nav>
+
+    <div class="main-wrapper">
+      <header class="top-bar">
+        <div class="page-title-box">
+          <h1>Coding Progress Dashboard</h1>
+          <p>Track your DSA progress, difficulty distribution, and platform statistics</p>
+        </div>
+        <div class="top-actions">
+          <a href="problems.html" class="btn btn-primary btn-sm">+ Add Problem</a>
+        </div>
+      </header>
+
+      <main class="content-body">
+        <!-- 2-Card Summary Overview -->
+        <div class="grid grid-cols-2" style="margin-bottom: 1.5rem;">
+          <!-- 1. Total Problems Solved -->
+          <div class="card">
+            <div class="card-title">
+              <span>Total Problems Solved</span>
+              <span class="badge badge-solved" id="solved-ratio">0%</span>
+            </div>
+            <div class="stat-value" id="total-solved">0</div>
+            <div class="stat-sub" id="attempted-info">0 attempted</div>
+          </div>
+
+          <!-- 2. Difficulty Distribution -->
+          <div class="card">
+            <div class="card-title">
+              <span>Difficulty Distribution</span>
+              <span style="font-size: 0.8rem; color: var(--accent-teal);">Easy / Med / Hard</span>
+            </div>
+            <div class="stat-value" style="font-size: 1.6rem; display: flex; gap: 0.5rem; align-items: baseline; margin-top: 0.6rem;">
+              <span style="color: var(--color-easy)" id="count-easy">0</span> /
+              <span style="color: var(--color-medium)" id="count-medium">0</span> /
+              <span style="color: var(--color-hard)" id="count-hard">0</span>
+            </div>
+            <div class="stat-sub">Distribution of solved DSA problems</div>
+          </div>
+        </div>
+
+        <!-- 2-Column Split: Platform Progress & Recent Activity -->
+        <div class="grid grid-cols-2" style="margin-bottom: 1.5rem;">
+          <!-- 3. Platform Progress -->
+          <div class="card">
+            <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Platform Progress</h3>
+            <div id="platform-bars" style="display: flex; flex-direction: column; gap: 1rem;">
+              <!-- Dynamic bars -->
+            </div>
+          </div>
+
+          <!-- 4. Recent Coding Activity -->
+          <div class="card">
+            <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Recent Coding Activity</h3>
+            <div class="table-container" style="max-height: 250px; overflow-y: auto;">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Problem</th>
+                    <th>Result</th>
+                    <th>Language</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-activity-tbody">
+                  <tr><td colspan="4" style="text-align: center; color: var(--text-dim);">Loading activity...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Topic-wise Performance -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div>
+              <h3 style="font-size: 1.1rem;">Topic-wise Performance</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted);">DSA topics completion and practice progress</p>
+            </div>
+            <a href="problems.html" class="btn btn-secondary btn-sm">Manage Problems &rarr;</a>
+          </div>
+          <div id="topic-grid" class="grid grid-cols-3">
+            <!-- Dynamic Topic Cards -->
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await App.init('dashboard');
+      loadDashboardData();
+    });
+
+    async function loadDashboardData() {
+      try {
+        const res = await fetch('/codestreak/api/analytics/overview');
+        const json = await res.json();
+        if (!json.success) return;
+
+        const summary = json.data.summary;
+        const recent = json.data.recentSubmissions;
+
+        // 1. Total Solved
+        document.getElementById('total-solved').textContent = summary.totalSolved;
+        if (summary.externalTotalSolved > 0) {
+          document.getElementById('attempted-info').textContent = `${summary.externalTotalSolved} solved across connected profiles`;
+          document.getElementById('solved-ratio').textContent = `Live Synced`;
+        } else {
+          document.getElementById('attempted-info').textContent = `${summary.totalAttempted} attempted (${summary.totalProblems} tracked)`;
+          const solvedPct = summary.totalProblems > 0 ? Math.round((summary.totalSolved / summary.totalProblems) * 100) : 0;
+          document.getElementById('solved-ratio').textContent = `${solvedPct}% solved`;
+        }
+
+        // 2. Difficulty Distribution
+        document.getElementById('count-easy').textContent = summary.easySolved;
+        document.getElementById('count-medium').textContent = summary.mediumSolved;
+        document.getElementById('count-hard').textContent = summary.hardSolved;
+
+        // 3. Platform breakdown (with live connected platforms)
+        renderPlatformBars(summary.platformSolved, summary.connectedPlatforms);
+
+        // 4. Recent Activity
+        renderRecentActivity(recent);
+
+        // 5. Topics breakdown
+        loadTopicBreakdown();
+      } catch (e) {
+        console.error('Failed to load dashboard data', e);
+      }
+    }
+
+    function renderPlatformBars(platformMap, connectedPlatforms) {
+      const container = document.getElementById('platform-bars');
+      container.innerHTML = '';
+
+      if (connectedPlatforms && connectedPlatforms.length > 0) {
+        connectedPlatforms.forEach(cp => {
+          const solved = cp.problemsSolved || 0;
+          const rating = cp.rating ? `Rating: ${cp.rating}` : '';
+          const rank = cp.globalRank ? `(${cp.globalRank})` : '';
+          const subtitle = [rating, rank].filter(Boolean).join(' • ');
+
+          const el = document.createElement('div');
+          el.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem 1rem;';
+          el.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-weight: 700; color: var(--text-bright);">${cp.platformName}</span>
+                <span style="font-size: 0.8rem; color: var(--accent-cyan); font-family: var(--font-mono);">@${cp.platformUsername}</span>
+              </div>
+              <span style="font-weight: 700; color: var(--color-easy); font-family: var(--font-mono); font-size: 0.95rem;">${solved} solved</span>
+            </div>
+            ${subtitle ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${subtitle}</div>` : ''}
+          `;
+          container.appendChild(el);
+        });
+        return;
+      }
+
+      const platforms = Object.keys(platformMap || {});
+      if (platforms.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-dim); text-align: center; padding: 1.5rem;">No platforms connected yet. <a href="platforms.html" style="color: var(--accent-teal)">Connect a platform &rarr;</a></div>';
+        return;
+      }
+
+      const maxVal = Math.max(...Object.values(platformMap), 1);
+
+      platforms.forEach(plat => {
+        const count = platformMap[plat];
+        const pct = Math.round((count / maxVal) * 100);
+
+        const el = document.createElement('div');
+        el.innerHTML = `
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.25rem;">
+            <span style="font-weight: 600;">${plat}</span>
+            <span style="color: var(--text-muted); font-family: var(--font-mono);">${count} solved</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.06); height: 8px; border-radius: 4px; overflow: hidden;">
+            <div style="background: linear-gradient(90deg, var(--accent-teal), var(--accent-cyan)); width: ${pct}%; height: 100%;"></div>
+          </div>
+        `;
+        container.appendChild(el);
+      });
+    }
+
+    function renderRecentActivity(submissions) {
+      const tbody = document.getElementById('recent-activity-tbody');
+      tbody.innerHTML = '';
+
+      if (!submissions || submissions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-dim); padding: 1.5rem;">No recent activity recorded.</td></tr>';
+        return;
+      }
+
+      submissions.forEach(sub => {
+        const dateStr = sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString() : 'Today';
+        const isAc = sub.status === 'ACCEPTED';
+        const badgeClass = isAc ? 'badge-easy' : 'badge-hard';
+        const label = isAc ? 'Accepted' : 'Failed';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight: 500;">${sub.problemTitle || 'DSA Problem'}</td>
+          <td><span class="badge ${badgeClass}">${label}</span></td>
+          <td style="color: var(--text-muted); font-size: 0.8rem;">${sub.language || 'Java'}</td>
+          <td style="color: var(--text-dim); font-size: 0.8rem;">${dateStr}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadTopicBreakdown() {
+      try {
+        const res = await fetch('/codestreak/api/analytics/topics');
+        const json = await res.json();
+        if (!json.success) return;
+
+        const grid = document.getElementById('topic-grid');
+        grid.innerHTML = '';
+
+        json.data.slice(0, 9).forEach(topic => {
+          const card = document.createElement('div');
+          card.style.background = 'rgba(255,255,255,0.03)';
+          card.style.border = '1px solid var(--border-color)';
+          card.style.borderRadius = 'var(--radius-md)';
+          card.style.padding = '1rem';
+
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-weight: 600; font-size: 0.9rem;">${topic.topicName}</span>
+              <span style="font-size: 0.8rem; color: var(--accent-teal); font-weight: 700;">${topic.completionPercentage}%</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.06); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 0.5rem;">
+              <div style="background: var(--accent-teal); width: ${topic.completionPercentage}%; height: 100%;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim);">
+              <span>Solved: ${topic.solvedCount}/${topic.totalProblems}</span>
+              <span>Attempted: ${topic.attemptedCount}</span>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  </script>
+</body>
+</html>
