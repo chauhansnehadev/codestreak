@@ -190,7 +190,6 @@ CREATE INDEX idx_revisions_user_sched ON revisions(user_id, scheduled_for, statu
 -- Platforms
 INSERT INTO platforms (name, code, base_url, icon_name) VALUES
 ('LeetCode', 'leetcode', 'https://leetcode.com', 'leetcode'),
-('CodeChef', 'codechef', 'https://www.codechef.com', 'codechef'),
 ('Codeforces', 'codeforces', 'https://codeforces.com', 'codeforces'),
 ('HackerRank', 'hackerrank', 'https://www.hackerrank.com', 'hackerrank');
 

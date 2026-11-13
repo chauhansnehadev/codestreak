@@ -10,7 +10,6 @@
     if (!localStorage.getItem('cs_initialized')) {
       const defaultPlatforms = [
         { id: 1, name: 'LeetCode', code: 'leetcode', baseUrl: 'https://leetcode.com', isActive: true },
-        { id: 2, name: 'CodeChef', code: 'codechef', baseUrl: 'https://www.codechef.com', isActive: true },
         { id: 3, name: 'Codeforces', code: 'codeforces', baseUrl: 'https://codeforces.com', isActive: true },
         { id: 4, name: 'HackerRank', code: 'hackerrank', baseUrl: 'https://www.hackerrank.com', isActive: true }
       ];
