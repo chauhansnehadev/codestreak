@@ -24,12 +24,16 @@ public class DatabaseConfig {
                 }
             } catch (Exception ignored) {}
 
+            // Default fallback credentials (Render PostgreSQL)
+            String fallbackJdbcUrl = "jdbc:postgresql://dpg-dbripg3rjlhs73bdt82g-a.singapore-postgres.render.com:5432/codestreak_db_x34l";
+            String fallbackUser = "codestreak_db_x34l_user";
+            String fallbackPass = "vrGqEJfGYHsRqqh5NCbPKYXGrMfjUGW8";
+
             // Support Render's full DATABASE_URL or individual credentials
             String envDbUrl = System.getenv("DATABASE_URL");
             String jdbcUrl;
 
             if (envDbUrl != null && !envDbUrl.isBlank()) {
-                // If DATABASE_URL starts with postgres://, convert to jdbc:postgresql://
                 if (envDbUrl.startsWith("postgres://")) {
                     jdbcUrl = envDbUrl.replace("postgres://", "jdbc:postgresql://");
                 } else if (envDbUrl.startsWith("postgresql://")) {
@@ -39,16 +43,9 @@ public class DatabaseConfig {
                 }
                 config.setJdbcUrl(jdbcUrl);
             } else {
-                String host = System.getenv().getOrDefault("DB_HOST", props.getProperty("db.host", "localhost"));
-                String port = System.getenv().getOrDefault("DB_PORT", props.getProperty("db.port", "5432"));
-                String dbName = System.getenv().getOrDefault("DB_NAME", props.getProperty("db.name", "codestreak"));
-                String user = System.getenv().getOrDefault("DB_USER", props.getProperty("db.user", System.getProperty("user.name", "snehachauhan")));
-                String password = System.getenv().getOrDefault("DB_PASS", props.getProperty("db.password", ""));
-
-                jdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + dbName;
-                config.setJdbcUrl(jdbcUrl);
-                config.setUsername(user);
-                config.setPassword(password);
+                config.setJdbcUrl(fallbackJdbcUrl);
+                config.setUsername(fallbackUser);
+                config.setPassword(fallbackPass);
             }
 
             // Also check for separate DB_USER/DB_PASS overrides if provided
