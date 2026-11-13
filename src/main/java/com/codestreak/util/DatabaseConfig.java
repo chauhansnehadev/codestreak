@@ -24,17 +24,37 @@ public class DatabaseConfig {
                 }
             } catch (Exception ignored) {}
 
-            String host = System.getenv().getOrDefault("DB_HOST", props.getProperty("db.host", "localhost"));
-            String port = System.getenv().getOrDefault("DB_PORT", props.getProperty("db.port", "5432"));
-            String dbName = System.getenv().getOrDefault("DB_NAME", props.getProperty("db.name", "codestreak"));
-            String user = System.getenv().getOrDefault("DB_USER", props.getProperty("db.user", System.getProperty("user.name", "snehachauhan")));
-            String password = System.getenv().getOrDefault("DB_PASS", props.getProperty("db.password", ""));
+            // Support Render's full DATABASE_URL or individual credentials
+            String envDbUrl = System.getenv("DATABASE_URL");
+            String jdbcUrl;
 
-            String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + dbName;
+            if (envDbUrl != null && !envDbUrl.isBlank()) {
+                // If DATABASE_URL starts with postgres://, convert to jdbc:postgresql://
+                if (envDbUrl.startsWith("postgres://")) {
+                    jdbcUrl = envDbUrl.replace("postgres://", "jdbc:postgresql://");
+                } else if (envDbUrl.startsWith("postgresql://")) {
+                    jdbcUrl = envDbUrl.replace("postgresql://", "jdbc:postgresql://");
+                } else {
+                    jdbcUrl = envDbUrl;
+                }
+                config.setJdbcUrl(jdbcUrl);
+            } else {
+                String host = System.getenv().getOrDefault("DB_HOST", props.getProperty("db.host", "localhost"));
+                String port = System.getenv().getOrDefault("DB_PORT", props.getProperty("db.port", "5432"));
+                String dbName = System.getenv().getOrDefault("DB_NAME", props.getProperty("db.name", "codestreak"));
+                String user = System.getenv().getOrDefault("DB_USER", props.getProperty("db.user", System.getProperty("user.name", "snehachauhan")));
+                String password = System.getenv().getOrDefault("DB_PASS", props.getProperty("db.password", ""));
 
-            config.setJdbcUrl(jdbcUrl);
-            config.setUsername(user);
-            config.setPassword(password);
+                jdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + dbName;
+                config.setJdbcUrl(jdbcUrl);
+                config.setUsername(user);
+                config.setPassword(password);
+            }
+
+            // Also check for separate DB_USER/DB_PASS overrides if provided
+            if (System.getenv("DB_USER") != null) config.setUsername(System.getenv("DB_USER"));
+            if (System.getenv("DB_PASS") != null) config.setPassword(System.getenv("DB_PASS"));
+
             config.setDriverClassName("org.postgresql.Driver");
 
             config.setMaximumPoolSize(10);
